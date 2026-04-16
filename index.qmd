@@ -1,6 +1,20 @@
 ---
 title: "Its Celine"
+image: fayrouz.jpg
+toc: false
+about: 
+    template: jolla
+    image-shape: round
+    image-width: 17em
+    links: 
+      - text: LinkedIn
+        href: https://www.linkedin.com/feed/
+      - text: GitHub
+        href: https://github.com/CelineeUWC/CelineeUWC.github.io/settings/pages
+      - text: Email
+        href: almiar1@stolaf.edu
 ---
 
 Hello Everyone, my name is Celine and I am very excited to share my project on this website
+
 
