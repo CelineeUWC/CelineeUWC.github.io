@@ -1,13 +1,6 @@
 ---
-title: "CelineeUWC.github.io"
+title: "Its Celine"
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
-```{r}
-1 + 1
-```
-
+Hello Everyone, my name is Celine and I am very excited to share my project on this website
 
