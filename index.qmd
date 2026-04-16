@@ -1,6 +1,6 @@
 ---
 title: "Its Celine"
-image: fayrouz.jpg
+image: images/fayrouz.jpg
 toc: false
 about: 
     template: jolla
