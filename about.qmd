@@ -1,9 +1,23 @@
 ---
 title: "About"
+image: ghc.jpeg                         #upload my image to my About Page
+toc: false
+about: 
+    id: intro-heading                   #creates an ID to my content
+    template: solana                  # gives a template to my image
+    image-width: 20em                   # width
+    image-shape: rectangle              # rectangle shape
+    
+format: 
+
+  html: 
+    theme: yeti                         #new theme for my about page
+    css: styles.css
+    toc: true
+    page-layout: full
 ---
+:::{#intro-heading}
 
-About this site
-
-```{r}
-1 + 1
-```
+Hi, I’m a Data Science and Statistics, and Quantitative Economics double major with a strong interest in using data to understand real-world problems and build meaningful solutions. I enjoy working at the intersection of computation, mathematics, and social impact, whether that’s through coding projects, data analysis, or visualization work.
+This website is a collection of my projects, coursework, and experiments as I continue learning and growing in these fields. Each project reflects something I’ve explored, ranging from programming and algorithms to applied data science and analytical thinking.
+I’m always curious to learn new tools, improve my technical skills, and connect ideas across disciplines. Feel free to explore my work and see what I’ve been building

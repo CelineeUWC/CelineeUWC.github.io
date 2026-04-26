@@ -1,4 +1,14 @@
 ---
-title: "These are all the resources that I like"
+title: "Resources to all the Data Used"
 ---
+
+#Links to my Data
+
+[Taylor Swift CSV](https://github.com/CelineeUWC/SDS264_spring26/blob/main/TaylorSwift.csv)
+
+[BillieEilish CSV](https://github.com/CelineeUWC/SDS264_spring26/blob/main/BillieEilish.csv)
+
+[States]("https://rdrr.io/cran/poliscidata/man/states.html") 
+
+
 

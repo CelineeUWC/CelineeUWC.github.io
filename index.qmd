@@ -1,20 +1,45 @@
 ---
-title: "Its Celine"
-image: images/fayrouz.jpg
+title: ""
+image: Celine.jpeg                 #upload the image on my Home page
 toc: false
 about: 
-    template: jolla
-    image-shape: round
-    image-width: 17em
-    links: 
-      - text: LinkedIn
+    id: intro-heading            
+    template: trestles            #gives it a trestles template
+    image-shape: round            # make the image round
+    image-width: 17em             #give its width          
+    links:                        # provides links to my apps with their icon
+      - icon: linkedin
         href: https://www.linkedin.com/feed/
-      - text: GitHub
+      - icon: github
         href: https://github.com/CelineeUWC/CelineeUWC.github.io/settings/pages
-      - text: Email
-        href: almiar1@stolaf.edu
+      - icon: envelope
+        href: mailto:almiar1@stolaf.edu
 ---
+:::{#intro-heading}
+
+## Celine Al Miari
 
 Hello Everyone, my name is Celine and I am very excited to share my project on this website
+
+### Education
+
+**United World College RCN Norway**
+2024| IB Diploma
+
+**St. Olaf College**
+2028| Data Science and Statistics And Quantitative Economics Double Major
+
+### Biography 
+
+I am a double major in Data Science and Statistics and Quantitative Economics, with a strong interest in analytical problem-solving and data-driven decision-making. Originally from Lebanon, I bring a global perspective shaped by my international education and diverse experiences. I have volunteered extensively in humanitarian settings, supporting refugees, children, and individuals with disabilities, which reflects my deep commitment to community impact. I am fluent in both English and Arabic, and I combine technical expertise with strong communication and leadership skills. I continue to pursue opportunities that integrate data, economics, and social impact to create meaningful change.
+
+### Personal 
+
+I grew up in Lebanon and have had the chance to live and volunteer in different countries, which shaped how I see the world. I speak both Arabic and English fluently, and I love switching between them depending on the moment. I enjoy combining my interest in data with real-life problems, especially when it connects to economics or social impact. Outside of academics, I like being active outdoors and trying new experiences, from volunteering events to group activities. I also have a playful side and enjoy humor, memes, and finding small moments that make everyday life more fun. I love old Arabic Music. The picture represent an old Lebanese Singer Fayrouz. 
+
+### Get in Touch
+
+ **Phone**: 5075817668
+
 
 

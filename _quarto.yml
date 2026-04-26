@@ -3,24 +3,44 @@ project:
   output-dir: docs
 
 website:
-  title: "Celine Miari"
+  title: "© Celine Al Miari"           #Names my webiste Celine
   navbar:
     left:
       - href: index.qmd
-        text: Home
-      - about.qmd
-      - href: resources.qmd
-        text: Resources
+        text: Home                     #Creates a Home page having my info
+      - about.qmd                      # Creates a Home page having my info
+      - text: Resources                #Create a Resources Tab that has subtab 
+        menu: 
+          - href: resources.qmd
+            text: Resources          #Subtab that has the info of resources.qmd
+          -  href: TaylorSwift.csv
+             text: Taylor Direct Data
+          - href: BillieEilish.csv
+            text: Billie Direct Data
+            
+      - text: Projects                #Creates another Tab called Projects
+        menu: 
+          - href: Mini_Project.qmd    #Sub tab that has my project. qmd in it
+            text: First Project
+      - text: Maps                    # Creates another Tab called Maps
+        menu: 
+          - href: new.qmd
+            text: Maps               #Sub tab that has my maps.qmd in it
+      - text: Qualifications         #Creates another Tab called Qualification      
+        menu:
+          - href: https://drive.google.com/file/d/1lVnr0jMw-aueQ_Q_kfT04OCxHMBm4y2R/view?usp=share_link
+            text: Resume            # acess to my Resume Pdf
 
 
-format:
+format:                           #This create a dark Mode theme for my website
+                                  #that you can add or remove using botton
   html:
     theme: 
       light: minty
       dark:  solar
     css: styles.css
     toc: true
+    code-overflow: wrap
     page-layout: full
-
 
 

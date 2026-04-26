@@ -1,0 +1,330 @@
+---
+title: 'Celine Mini Project'
+format: html
+editor: visual
+published: false
+resource_files:
+- Mini_Project.html
+exclude:
+  - "*.html"
+  - "!*.qmd" # Exclude qmd files
+---
+
+##links to Data sets
+
+[Taylor Swift CSV](https://github.com/CelineeUWC/SDS264_spring26/blob/main/TaylorSwift.csv)
+
+[BillieEilish CSV](https://github.com/CelineeUWC/SDS264_spring26/blob/main/BillieEilish.csv)
+
+## Data Tidying
+
+```{r,echo=FALSE,message=FALSE}
+library(tidyverse)
+library(tidytext)
+library(textdata)
+library(wordcloud)
+library(wordcloud2)
+library(viridis)
+library(ggthemes)
+library(gutenbergr)
+
+billie <- read.csv("BillieEilish.csv")
+Taylor <- read.csv("TaylorSwift.csv")
+#Taylor <- Taylor[-c(146:498), ] #make the two data set have same number of rows
+```
+
+```{r,echo=FALSE, warning=FALSE}
+Billie_stop <- get_stopwords() #snowball stop words 
+Taylor_stop <- get_stopwords()
+Billie_smart <- get_stopwords(source = "smart") #smart stop words
+Taylor_smart <- get_stopwords(source = "smart")
+
+```
+
+```{r,echo=FALSE,warning=FALSE}
+nrc_sentiment <-get_sentiments(lexicon = "nrc") #emotions
+bing_sentiment <- get_sentiments(lexicon = "bing") #postive and negative sentiments
+```
+
+## Introduction
+
+Music is often described as an emotional outlet,shaping and reflecting how listeners experience love, loss, fear, and joy. Among many around the world; the artists, Billie Eilish and Taylor Swift are frequently contrasted in public perception: Billie Eilish is often characterized as dark, introspective, and melancholic, while Taylor Swift is commonly associated with storytelling, romance, and emotional evolution across distinct “eras.” But do these perceptions hold up under systematic text analysis?
+
+This project compares the lyrical content of Billie Eilish and Taylor Swift using two datasets of their song lyrics. Through string processing, regular expressions, and sentiment analysis techniques, I examine whether their music differs in measurable ways, specifically in overall sentiment (positive vs. negative), emotional categories (such as joy, sadness, fear, and anger), and recurring thematic patterns.This study aims to investigate whether one artist’s music is truly “happier” or “sadder,” or whether the emotional differences are more complex than cultural narratives suggest.
+
+## Billie
+
+First, we will tidy the Billie Eilish dataset by removing unnecessary words and tokenizing the text
+
+```{r,fig.cap= "This code tidy the Billie Eilish lyrics dataset for text analysis using tools from R. First, it adds a line number to keep track of lyric order. The lyrics are then converted to lowercase to ensure consistent text processing. Next, all characters that are not letters or spaces are removed, and extra spaces are trimmed. Songs with missing album names are filtered out. The cleaned lyrics are then tokenized so that each word becomes its own row. Finally, common stopwords and additional custom stopwords like smart stop words are removed to keep only meaningful words for analysis"}
+billie_clean <- billie|>
+  mutate(line = row_number(),
+    Lyric_clean = str_to_lower(Lyric), #lower case
+         lyrics = str_remove_all(Lyric_clean, "[^a-z\\s]"),#rem all no letter/space 
+lyrics = str_squish(lyrics)) |> #remove any removed space
+  filter(Album != "") |> #not named album removed
+  unnest_tokens(word, lyrics)  |> #tokenizing
+  anti_join(Billie_stop, by = "word")|> #snowball stopwords
+   anti_join(Billie_smart, by = "word") #smart stopwords
+
+
+  
+
+  
+```
+
+To explore romantic themes in the lyrics regular expressions will be used to detect words such as "love", "heart", and "baby" for Billie
+
+```{r,fig.cap="The code first filters the cleaned lyrics dataset to keep only words that begin with “love,” “baby,” or “heart,” including variations of those words. It then counts how many times each of these words appears in each album. The data is reshaped so that each word variation becomes its own column, showing how frequently each appears within the album. After that, a total number of love-related words is calculated for each album by summing the counts across the columns. Finally, the albums are sorted from highest to lowest based on this total",echo=FALSE, warning=FALSE}
+billie_love <- billie_clean |>
+  filter(str_detect(word, "love\\w*|baby\\w*|heart\\w*")) |> #keep words included
+  count(Album, word) |> #counts times each of these words appears in each album
+  pivot_wider(names_from = word,
+              values_from = n,
+              values_fill = 0)|> #reshape dt so word variation has its own column
+  
+  mutate(total = rowSums(across(love:heart))) |> #sum of overall words in the album
+  arrange(desc(total)) #arrange album from highest to lowest based on this total
+
+billie_love
+
+
+
+```
+
+Tibble 1 displays the number of words related to “love,” “baby,” and “heart” used in Billie Eilish’s lyrics by album. Each row represents an album, while the columns show the counts of different variations of these words and their total frequency. The album Do Not Smile at Me contains the highest total with 36 words related to love, while Party Favor and Hotline contain the fewest. Overall, the totals suggest that love-related words appear relatively infrequently across the albums, indicating that Billie Eilish’s songs do not heavily focus on traditional love themes
+
+**Now Dark theme in the lyrics will be discovered**
+
+```{r,fig.cap= "The code first filters the cleaned lyrics dataset to keep only words that begin with “dark,” “night,” “death,” “die,” “sad,” or “cry.” It then counts how many times each of these words appears in each album. The data is reshaped so that each dark-themed word becomes its own column, with the counts showing how frequently each word appears. the code then calculates a total number of dark-themed words for each album by summing the counts across the columns. Finally, the albums are arranged from highest to lowest based on this total", echo=FALSE,warning=FALSE, message=FALSE}
+billie_dark <- billie_clean |>
+  filter(str_detect(word, "dark\\w*|night\\w*|death\\w*|die\\w*|sad\\w*|cry\\w*")) |>  group_by(Album) |>
+  count(Album, word) |>
+  pivot_wider(names_from = word,
+              values_from = n,
+              values_fill = 0) |>
+  mutate(total = rowSums(across(bodies:died))) |>
+  arrange(desc(total))
+
+billie_dark
+```
+
+Tibble 2 shows the number of dark-themed words (such as “dark,” “night,” “death,” “die,” “sad,” and “cry”) used in Billie Eilish’s lyrics across different albums. Each row represents an album and includes counts of these word variations along with a total. The album Live at Third Man Records has the highest total with 17 dark-themed words, while Party Favor / Hotline Bling has the lowest with 5, which was also the lowest count for the love theme. Overall, the use of dark-themed words appears lower than the use of love-related words in the dataset, which is somewhat surprising given Billie Eilish’s reputation for darker lyrical themes
+
+## Taylor
+
+The same Tidying process will be done for Taylor Swift.
+
+```{r, fig.cap= "This code tidy the Taylor Swift's lyrics dataset for text analysis using tools from R. First, it adds a line number to keep track of lyric order. The lyrics are then converted to lowercase to ensure consistent text processing. Next, all characters that are not letters or spaces are removed, and extra spaces are trimmed. Songs with missing album names are filtered out. The cleaned lyrics are then tokenized so that each word becomes its own row. Finally, common stopwords and additional custom stopwords like smart stop words are removed to keep only meaningful words for analysis"}
+taylor_clean <- Taylor|>
+  mutate(line = row_number(),
+        Lyric_clean = str_to_lower(Lyric), #lower case
+         lyrics = str_remove_all(Lyric_clean, "[^a-z\\s]"),#rem all no letter/space 
+lyrics = str_squish(lyrics)) |> #remove any removed space
+  filter(Album != "") |> #not named album removed
+  unnest_tokens(word, lyrics)  |> #tokenizing
+  anti_join(Billie_stop, by = "word")|> #snowball stopwords
+   anti_join(Billie_smart, by = "word") #smart stopwords
+  
+
+  
+  
+  
+```
+
+To explore romantic themes in the lyrics regular expressions will be used to detect words such as "love", "heart", and "baby" for Taylor
+
+```{r, fig.cap= "The code first filters the cleaned lyrics dataset to keep only words that begin with “love,” “baby,” or “heart,” including variations such as “loving” or “hearted.” It then counts how many times each of these words appears in each album. The data is reshaped so that each word variation becomes its own column, showing how frequently it appears within each album. Finally, the code calculates a total number of love-related words for each album by summing the counts across these columns. Finally, the albums are arranged from highest to lowest based on this total", echo=FALSE,warning=FALSE}
+Taylor_love <- taylor_clean |>
+  filter(str_detect(word, "love\\w*|baby\\w*|heart\\w*")) |>
+  count(Album, word) |>
+  pivot_wider(names_from = word,
+              values_from = n,
+              values_fill = 0)|>
+  mutate(total = rowSums(across(love:heart))) |>
+  arrange(desc(total))
+
+Taylor_love
+```
+
+Tibble 3 shows the frequency of love-related words such as “love,” “baby,” and “heart” in Taylor Swift’s lyrics by album. Each row represents an album, while the columns display counts of variations of these words and a total for each album. The album 1989 has the highest total with 85 love-related words, while Speak Now (Deluxe) has the lowest of 10. Overall, the results show that love-related words appear frequently across Taylor Swift’s albums, highlighting the strong presence of love themes in her lyrics
+
+**Time theme in the lyrics will be discovered as well**
+
+```{r,fig.cap= "The code first filters the cleaned lyrics dataset to keep only words that begin with sad,break,cry,time,memory,remember, past,forever, and their variations. It then counts how many times each of these words appears in each album. The data is reshaped so that each word variation becomes its own column, showing how frequently it appears within each album. Finally, the code calculates a total number of love-related words for each album by summing the counts across these columns. Finally, the albums are arranged from highest to lowest based on this total",echo=FALSE,warning=FALSE}
+taylor_time <- taylor_clean |>
+  filter(str_detect(word, "sad\\w*|break\\w*|cry\\w*|time\\w*|memory\\w*|remember\\w*|past\\w*|forever\\w*")) |>
+  count(Album, word) |>
+  pivot_wider(names_from = word,
+              values_from = n,
+              values_fill = 0)|>
+  mutate(total = rowSums(across(time:cryin))) |>
+  arrange(desc(total))
+taylor_time
+
+```
+
+Tibble 4 shows the frequency of time- and emotion-related words such as “sad,” “break,” “cry,” “time,” “memory,” “remember,” “past,” and “forever” in Taylor Swift’s lyrics by album. Each row represents an album, while the columns display the counts of variations of these words along with a total for each album. The album Red (Deluxe Edition) has the highest total with 79 words, while 2004–2005 Demo CD has the lowest with 9. Overall, these words appear frequently across Taylor Swift’s albums, suggesting that themes of time, memory, and emotional reflection are common in her lyrics
+
+## Text Analysis
+
+**To figure out the most common used words by the two artists**
+
+```{r, fig.cap= "the first part of the code groups the cleaned Billie Eilish lyrics by album and counts the frequency of each word, sorting them from most to least frequent. It then adds a new column identifying the artist as Billie Eilish. The second part performs a similar process for Taylor Swift’s cleaned lyrics by counting how often each word appears in each album and labeling the artist as Taylor Swift", echo=FALSE}
+
+billie_words <- billie_clean |>
+  group_by(Album) |>
+  count(word, sort = TRUE)|>
+  mutate(artist = "Billie Eilish")
+
+taylor_words <- taylor_clean |>
+  count(Album,word, sort = TRUE) |>
+  mutate(artist = "Taylor Swift")
+```
+
+```{r,echo=FALSE}
+common_words <-bind_rows(taylor_words,billie_words) #combines the two word-frequency datasets for Taylor Swift and Billie Eilish into a single dataset
+
+```
+
+```{r,fig.cap="Figure 1 shows the five most common words used in the lyrics of Billie Eilish and Taylor Swift after removing filler words such as “oh,” “yeah,” “ooh,” “ey,” and “ah.” The combined dataset is grouped by artist, and the most frequent words are selected for each artist. The bar chart displays word counts, with words ordered by frequency and separated into panels for each artist, allowing for an easy comparison of the most commonly used words in their lyrics",fig.alt= "Figure 1 is a faceted horizontal bar chart comparing the ten most frequent words used in song lyrics by Billie Eilish and Taylor Swift. The x-axis represents the frequency of each word, ranging from approximately 0 to 250 occurrences, while the y-axis lists the individual words. The chart is split into two panels, one for Billie Eilish and one for Taylor Swift. Billie Eilish’s most frequent words include “ocean,” “eyes,” and “love,” while Taylor Swift’s most common words include “love,” “time,” and “back.” Overall, both artists frequently use emotionally neutral or relationship-focused words, suggesting that the most common vocabulary in their lyrics does not strongly emphasize either positive or negative sentiment", echo=FALSE}
+
+common_words |>
+  group_by(artist) |> #group by artists
+  filter(!str_detect(word, "oh+|yeah+|ooh+|ey+|ah+")) |> #keep rows non selected
+  slice_max(n, n =5) |> #the highest 5
+  ggplot(aes(x = fct_reorder(word, n), y =n,fill = artist )) + #reorder words based on their frequency
+  geom_col()+  # draw a bar chart showing the frequency of each word
+  coord_flip()+ # flip the axes so the words appear on the vertical axis
+  facet_wrap(~artist, scales = "free") + # create separate panels for each artist
+  labs(
+    title = "Most Common Words in Billie Eilish and Taylor Swift Lyrics",
+  x = "Word Frequency",
+  y = "Words"
+  )
+  
+  
+```
+
+After identifying their most common words, we will analyze the sentiments of the lyrics to better understand the emotional themes present in the songs of Billie Eilish and Taylor swift
+
+```{r, fig.cap="Figure 2 shows the distribution of positive and negative sentiment words in Billie Eilish’s lyrics by album. The cleaned lyrics are joined with the Bing sentiment lexicon to classify each word as positive or negative. The words are then grouped by album and counted, and the bar chart displays the total number of words associated with each sentiment category, illustrating the overall emotional tone present in Billie Eilish’s lyrics", fig.alt= "Figure 2 shows a bar chart. The x-axis represents sentiment categories (negative and positive), and the y-axis represents word count ranging from 0 to 2000. The negative sentiment bar is substantially higher, at roughly 1,850 words, while the positive sentiment bar is around 650 words. This indicates that negative sentiment words appear about twice as often as positive sentiment words in the lyrics", echo=FALSE}
+Billie_setiment <- billie_clean |>
+  inner_join(bing_sentiment, by = "word")|>
+  group_by(Album) |>
+  count(sentiment) |>
+  ggplot(aes(x = sentiment, y = n, fill = sentiment )) +
+  geom_col() +
+  labs(
+    title = "Sentiment Distribution in Billie Eilish Lyrics",
+    x = "Sentiment",
+    y = "Word Count"
+  )
+
+Billie_setiment  
+```
+
+```{r, fig.cap="Figure 3 shows the distribution of positive and negative sentiment words in Taylor Swift’s lyrics by album. The cleaned lyrics are joined with the Bing sentiment lexicon to classify each word as either positive or negative. The words are then grouped by album and counted, and the bar chart displays the total number of words associated with each sentiment category, illustrating the overall emotional tone in Taylor Swift’s lyrics.", fig.alt=  "Figure 3 shows a bar chart. The x-axis represents sentiment categories (negative and positive), and the y-axis represents word count ranging from 0 to 2000. The negative sentiment bar is slightly higher, at roughly 1,850 words, while the positive sentiment bar is around 1650 words. This indicates that negative and positiv sentiment words appear approximalty the same in the lyrics", echo=FALSE}
+taylor_setiment <- taylor_clean |>
+  inner_join(bing_sentiment, by = "word")|>
+  group_by(Album)|>
+  count(sentiment) |>
+  ggplot(aes(x = sentiment, y = n, fill = sentiment )) +
+  geom_col() +
+  labs(
+    title = "Sentiment Distribution in Taylor Swift's Lyrics",
+    x = "Sentiment",
+    y = "Word Count"
+  )
+taylor_setiment
+```
+
+The sentiment analysis reveals a noticeable difference in the overall emotional tone of the two artists’ lyrics. Billie Eilish’s songs show a strong prevalence of negative sentiment words, roughly twice as many as positive words, suggesting her lyrics lean toward darker and more introspective themes. In contrast, Taylor Swift’s lyrics exhibit a more balanced sentiment distribution, with positive and negative words appearing at similar levels, indicating that her songs convey a mix of emotions but tend toward more uplifting or reflective content. These patterns support the perception that Billie often explores melancholy or complex emotions, while Taylor emphasizes narrative storytelling with a wider emotional range, including love, joy, and anticipation.
+
+**Now, we will analyze the emotions expressed in the lyrics of Billie Eilish and Taylor Swift by applying sentiment analysis. This allows us to identify the emotional tone present in the words used throughout the songs.**
+
+```{r,fig.cap="Figure 3 shows the distribution of emotional categories in Billie Eilish’s lyrics using the NRC sentiment lexicon. The cleaned lyrics are joined with the NRC dataset to classify words into emotions such as joy, sadness, anger, fear, and trust. The words are then counted by emotion category, and the bar chart displays the total frequency of each emotion, with categories ordered by their counts to highlight the most common emotions expressed in Billie Eilish’s lyrics", fig.alt= "Figure 3 shows a horizontal bar chart displaying the distribution of emotional categories in lyrics by Billie Eilish using the NRC sentiment lexicon. The x-axis represents the number of words associated with each emotion, while the y-axis lists the emotion categories. Negative sentiment appears most frequently with roughly 1,250 words, followed by positive sentiment at around 1,050. Among specific emotions, sadness and fear are the most common, each appearing close to 900 words. Joy and anticipation occur moderately often at approximately 700 words each, while anger, trust, and disgust appear around 550–650 words. Surprise is the least frequent emotion",echo=FALSE}
+
+Billie_emotions <- billie_clean |>
+  inner_join(nrc_sentiment, by = "word", relationship =
+  "many-to-many") |>
+  count(sentiment, sort = TRUE) |>
+  ggplot(aes(x = fct_reorder(sentiment , n), y = n)) +
+  geom_col(fill = "darkblue")+
+  coord_flip()+
+  labs(
+    title = "Emotional Distribution in Billie Eilish Lyrics",
+    subtitle = "Frequency of different emotions based on the NRC lexicon",
+    x = "Emotion Category",
+    y = "Number of Words"
+  ) +
+  theme_minimal()
+Billie_emotions
+```
+
+```{r,fig.cap="Figure 4 displays the distribution of emotional categories in Taylor Swift’s lyrics using the NRC sentiment lexicon. The cleaned lyrics are joined with the NRC dataset to classify each word into specific emotions such as joy, sadness, anger, fear, and trust. The words are then counted by emotion category, and the bar chart shows the total frequency of each emotion, with the categories ordered by their counts to highlight the most common emotions expressed in Taylor Swift’s lyrics", fig.alt= "Figure 4 shows a horizontal bar chart displaying emotional categories in lyrics by Taylor Swift based on the NRC sentiment lexicon. Positive sentiment appears most frequently with roughly 2,300 words, followed by negative sentiment at about 1,700. Among specific emotions, joy and anticipation occur most often, while surprise and disgust appear least frequently",echo=FALSE}
+Taylor_emotions <- taylor_clean |>
+  inner_join(nrc_sentiment, by = "word", relationship =
+  "many-to-many") |>
+  count(sentiment, sort = TRUE) |>
+  ggplot(aes(x = fct_reorder(sentiment , n), y = n)) +
+  geom_col(fill = "darkblue")+
+  labs(
+    title = "Emotional Distribution in Taylor Swift Lyrics",
+    subtitle = "Frequency of different emotions based on the NRC lexicon",
+    x = "Emotion Category",
+    y = "Number of Words"
+  ) +
+  theme_minimal() +
+  coord_flip()
+Taylor_emotions
+```
+
+The figures show clear differences in the emotional tone of the two artists’ lyrics. Billie Eilish’s lyrics contain more negative emotions, with sadness and fear appearing most frequently. This suggests that her songs often explore darker or more introspective themes. In contrast, Taylor Swift’s lyrics show a higher level of positive sentiment, with joy and anticipation appearing most often. This indicates that while both artists express a range of emotions, Taylor Swift’s lyrics tend to emphasize more positive themes compared to Billie Eilish’s.
+
+**To better understand we will make a wordcloud for both artists as a final conclusion**
+
+```{r,echo=FALSE}
+Billie_cloud <- billie_clean |>
+  anti_join(Billie_stop) |> # remove common stopwords from the dataset
+  anti_join(Billie_smart) |> # remove additional custom stopwords
+  filter(!str_detect(word, "im|dont")) |> # remove specific unwanted words like "im" and "dont"
+  count(word) |> # count how many times each word appears
+  filter(word != "NA") |> # remove missing or invalid words
+  arrange(desc(n)) # sort words from most frequent to least frequent
+
+wordclo <- Billie_cloud |>
+  slice_head(n = 80) |> # keep the top 80 most frequent words
+  data.frame() # convert the tibble to a data frame for the word cloud function
+
+wordcloud2(
+  wordclo,
+  size = 0.25, # control the overall size of the word cloud
+  shape = 'circle', # display the words in a circular layout
+  minSize = 5 # set the minimum font size for words
+)
+```
+
+```{r,echo=FALSE}
+Taylor_cloud <- taylor_clean |>
+  anti_join(Taylor_stop) |> # remove stopwords from the dataset
+  anti_join(Taylor_smart) |> # remove additional custom stopwords
+  filter(!str_detect(word, "im|dont|youre|wanna|pre")) |> # remove specific unwanted words
+  count(word) |> # count how many times each word appears
+  filter(word != "NA") |> # remove missing or invalid words
+  arrange(desc(n)) # sort words from most frequent to least frequent
+
+wordclo <- Taylor_cloud |>
+  slice_head(n = 80) |> # keep the top 80 most frequent words
+  data.frame() # convert the tibble to a data frame for the word cloud function
+
+wordcloud2(
+  wordclo,
+  size = 0.25, # control the overall size of the word cloud
+  shape = 'circle', # display the words in a circular layout
+  minSize = 5 # set the minimum font size for words
+)
+
+```
+
+The text analysis reveals clear differences in the lyrical themes of Billie Ellish and Taylor Swift. Billie Eilish’s songs lean toward darker, more introspective content, with negative sentiments like sadness and fear appearing most frequently. Love-related words are present in her lyrics, though less dominant, showing that her songs are not entirely devoid of romantic themes. Taylor Swift’s lyrics, in contrast, are more positive and reflective, with joy, anticipation, and love-related words appearing frequently across albums. Time- and memory-related words also appear prominently, highlighting her narrative and storytelling style. Word clouds for both artists reinforce these patterns, showing that Billie often focuses on emotional intensity and introspection, while Taylor emphasizes relationships, personal growth, and optimism. Overall, the analysis demonstrates that while both artists explore a wide emotional range, their thematic focus and emotional tone differ in measurable ways. Notably, Billie’s use of love language suggests that a closer examination of the correlation between love-related words and other emotions could provide deeper insights. With the current data, one could argue that both Billie Eilish and Taylor Swift have happy or romantic songs in general, though Taylor’s lyrics contain a higher proportion, even amid Billie’s darker themes.

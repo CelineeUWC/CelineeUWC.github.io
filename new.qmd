@@ -1,0 +1,185 @@
+---
+title: "Numeric and Categorical Static and Interactive Maps "
+format: html
+---
+
+##Links to Data Set
+
+[States]("https://rdrr.io/cran/poliscidata/man/states.html")
+
+##Library: 
+```{r, message=FALSE}
+
+#load the library
+library(tidyverse)
+library(mdsr)
+library(maps)
+library(viridis)
+library(leaflet)
+```
+
+
+
+```{r, message=FALSE}
+#| message: false
+#| warning: false
+
+# Get info to draw US states for geom_polygon (connect the lat-long points)
+states_polygon <- as_tibble(map_data("state")) |>
+  select(region, group, order, lat, long)
+
+# See what the state (region) levels look like in states_polygon
+#unique(states_polygon$region)
+
+head(states_polygon$region, 10)
+# Get info to draw US states for geom_sf and leaflet (simple features object 
+#   with multipolygon geometry column)
+library(sf)
+states_sf <- 
+  read_sf("https://rstudio.github.io/leaflet/json/us-states.geojson") |>
+  select(name, geometry)
+
+# See what the state (name) levels look like in states_sf
+#unique(states_sf$name)
+head(states_sf$name, 10)
+
+
+# Load in state-wise data for filling our choropleth maps
+#   (Note that I selected my two variables of interest to simplify)
+library(poliscidata)   # may have to install first
+polisci_data <- as_tibble(poliscidata::states) |>
+  select(state, carfatal07, cook_index3)
+
+# See what the state (state) levels look like in polisci_data
+#unique(polisci_data$state)   # can't see trailing spaces but can see
+head(polisci_data$state, 10)                             #   lack of internal spaces
+#print(polisci_data) # can see trailing spaces
+```
+
+
+
+```{r, message=FALSE}
+# Make sure all keys have the same format before joining:
+#   all lower case, no internal or external spaces
+
+polisci_data <- polisci_data |>
+  mutate(state = str_to_lower(str_squish(state)))
+
+states_polygon <- states_polygon |>
+  mutate(region = str_to_lower(str_squish(region)))
+
+states_sf <- states_sf |>
+  mutate(name = str_to_lower(str_squish(name)))
+
+```
+
+
+
+```{r, message=FALSE}
+# Now we can merge data sets together for the static and the interactive plots
+
+states_polygon <- states_polygon
+polisci_data <- polisci_data
+
+
+# static merge
+map_data_stat <- states_polygon |>
+  left_join(polisci_data, by = c("region" = "state")) |>
+  filter(!(region %in% c("alaska", "hawaii","puerto rico","district of columbia")))
+head(map_data_stat, 10)
+# interactive merge
+map_data_sf <- states_sf |>
+  left_join(polisci_data, by = c("name" = "state")) |>
+  filter(!(name %in% c("alaska", "hawaii","puerto rico","district of columbia"))) |>
+  mutate(labels = str_c(name, ": ", cook_index3, "Cook PVI"))
+
+head(map_data_sf, 10)
+# Check that merge worked for 48 contiguous stat
+n_distinct(map_data_stat$region)
+n_distinct(map_data_sf$name)
+```
+**Numeric variable (static plot)**
+```{r,echo=FALSE,message=FALSE}
+
+ggplot(map_data_stat, aes(x = long, y = lat, group = group, fill = carfatal07)) +
+  geom_polygon(color = "white") +
+  coord_map()+
+  theme_void()+
+  scale_fill_viridis()+
+  labs(
+   title = "Motor Vehicle Fatalities by State (2007)",
+    x = "Longitude",
+    y = "Latitude",
+  fill = "Fatalities",
+  caption = "Source: poliscidata R package (states dataset) and maps / leaflet geographic data"
+
+  )+
+  theme_void()
+```
+**Numeric variable (interactive plot)**
+
+```{r,echo=FALSE,message=FALSE}
+# it's okay to skip a legend here
+pal <- colorNumeric("viridis", domain = map_data_sf$carfatal07)
+leaflet(map_data_sf) |>
+  setView(-96, 37.8, 4) |>
+  addTiles() |>
+  addPolygons(
+    fillColor = pal(map_data_sf$carfatal07),
+    fillOpacity = 20,
+    color = "white",
+    weight = 1,
+    label = ~paste0(name, ": ","Fatality Rate: ", carfatal07)
+  ) |>
+  addLegend(
+    pal = pal,
+    values = ~carfatal07,
+    title = "Motor Vehicle Fatalities (2007)",
+    position = "bottomright")
+```
+
+
+These maps visualize variation in motor vehicle fatalities across U.S. states in 2007, with light shades indicating higher fatality rates. States with higher car fatality rates appear concentrated in rural regions. A clear regional pattern emerges: states in the Montana and Mississippi tend to display higher fatality levels, while states in Washington, California and MN generally exhibit lower rates. This spatial disparity may reflect underlying differences in factors such as population density, road infrastructure, driving distances, and traffic safety policies. The second interactive map confirms regional clustering and allows exploration of exact values by hovering over each state. Explicit pointing out the state with the carfatalies to make it easier to point out the lower and high values 
+
+**Categorical variable (static plot)**
+
+```{r,echo=FALSE, message= FALSE}
+# be really careful with matching color order to factor level order
+ggplot(map_data_stat, aes(x = long, y = lat, group = group, fill =  cook_index3)) +
+  geom_polygon(color = "white") +
+  coord_map()+
+  theme_void() +
+  labs(
+    title = "Cook Index by State",
+    x = "Longitude",
+    y = "Latitude",
+    fill = "Cook Index",
+    caption = "Source: poliscidata R package (states dataset) and maps / leaflet geographic data "
+  ) +
+  theme_void()
+```
+
+**Categorical variable (interactive plot)**
+
+```{r,echo=FALSE, message=FALSE}
+# may use colorFactor() here
+pal_cat <- colorFactor("Set2", domain = map_data_sf$cook_index3)
+leaflet(map_data_sf) |>
+  addTiles() |>
+  addPolygons(
+    fillColor = pal_cat(map_data_sf$cook_index3),
+    fillOpacity = 0.7,
+    color = "white",
+    weight = 1,
+    label = ~paste0(name, ": Cook Index: ", cook_index3)
+  ) |>
+  addLegend( pal = pal_cat,
+        values = ~cook_index3,
+        title = "Cook Index by State",
+        position = "bottomright"
+    )
+```
+
+
+
+The Cook Index classification shows variation in political or demographic grouping across states, with clear regional patterns.The Two maps visualize variation in the Cook Index across U.S. states, where red indicates more Republican-leaning states, blue indicates more Democratic-leaning states, green represents politically neutral or evenly balanced states, and gray indicates missing data. A clear regional pattern emerges. States such as Washington and California tend to be strongly Democratic-leaning, while Texas and Oklahoma are more Republican-leaning. Meanwhile, states like Montana and Minnesota appear closer to neutral or evenly balanced. This spatial disparity may reflect underlying differences in political ideology, population distribution, and urbanization levels across regions. The second map of interactive version makes it easier to compare neighboring states and identify regional clusters in Cook Index categories.
